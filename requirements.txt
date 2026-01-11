@@ -1,0 +1,8 @@
+flask
+opencv-python
+mediapipe
+pandas
+numpy
+scikit-learn
+requests
+python-dotenv
