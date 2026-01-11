@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fall Detection</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container">
+        <div class="topbar-content">
+          <div>
+            <h1>Fall Detection</h1>
+            <p class="subtitle">Real-time fall detection monitoring system</p>
+          </div>
+          <div class="status-badge">
+            <span class="status-indicator"></span>
+            <span id="last-updated">Live</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="controls">
+        <div class="stats">
+          <div class="stat-item">
+            <span class="stat-label">Total Alerts</span>
+            <span class="stat-value" id="total">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Status</span>
+            <span class="stat-value" style="font-size: 16px; color: var(--success)">● Active</span>
+          </div>
+        </div>
+        <button id="refresh" class="btn btn-primary">
+          <span>🔄</span>
+          <span>Refresh</span>
+        </button>
+        <button id="clearHistory" class="btn btn-secondary">
+          <span>🗑️</span>
+          <span>Clear</span>
+        </button>
+      </section>
+
+      <section id="history" class="history-grid">
+        <div class="empty">No alerts detected yet. System is monitoring...</div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <p>Fall Detection System v1.0 · API: <code>/api/history</code> · Evidence: <code>/evidence/&lt;filename&gt;</code></p>
+      </div>
+    </footer>
+
+    <script>
+      const HISTORY_URL = '/api/history';
+      const POLL_MS = 2000;
+      let isFetching = false;
+
+      function clearHistoryDisplay() {
+        const container = document.getElementById('history');
+        if (container) {
+          container.innerHTML = '<div class="empty">Loading data...</div>';
+        }
+      }
+
+      async function fetchHistory() {
+        if (isFetching) return;
+        isFetching = true;
+        const container = document.getElementById('history');
+        try {
+          if (container) container.innerHTML = '<div class="empty">Loading data...</div>';
+
+          const res = await fetch(HISTORY_URL, {cache: 'no-store'});
+          if (!res.ok) throw new Error('Network response was not ok: ' + res.status);
+          const data = await res.json();
+          renderHistory(data);
+          
+          const status = document.getElementById('last-updated');
+          if (status) {
+            status.textContent = 'Updated ' + new Date().toLocaleTimeString();
+            status.style.color = '';
+          }
+        } catch (err) {
+          console.error('Failed to fetch history', err);
+          if (container) container.innerHTML = '<div class="empty">⚠️ Error loading data. Please check server connection.</div>';
+          const status = document.getElementById('last-updated');
+          if (status) {
+            status.style.color = 'var(--danger)';
+            status.textContent = 'Connection error';
+          }
+        } finally {
+          isFetching = false;
+        }
+      }
+
+      function renderHistory(list) {
+        const container = document.getElementById('history');
+        container.innerHTML = '';
+        document.getElementById('total').textContent = list.length;
+
+        if (!list || list.length === 0) {
+          container.innerHTML = '<div class="empty">No alerts detected yet. System is monitoring...</div>';
+          return;
+        }
+
+        list.slice().reverse().forEach(record => {
+          const card = document.createElement('article');
+          card.className = 'card';
+
+          // Header
+          const header = document.createElement('div');
+          header.className = 'card-header';
+          header.innerHTML = `
+            <h3>${escapeHtml(record.label)}</h3>
+            <span class="confidence">${Math.round(record.prob * 100)}%</span>
+          `;
+          card.appendChild(header);
+
+          // Body
+          const body = document.createElement('div');
+          body.className = 'card-body';
+
+          // Time
+          const time = document.createElement('div');
+          time.className = 'card-time';
+          time.textContent = escapeHtml(record.time);
+          body.appendChild(time);
+
+          // Details
+          if (record.meta) {
+            const details = document.createElement('div');
+            details.className = 'card-details';
+            const m = record.meta;
+            
+            if (m.camera_id) {
+              details.innerHTML += `
+                <div class="detail-item">
+                  <div class="detail-label">Camera</div>
+                  <div class="detail-value">${escapeHtml(m.camera_id)}</div>
+                </div>
+              `;
+            }
+            
+            if (m.frame_id) {
+              details.innerHTML += `
+                <div class="detail-item">
+                  <div class="detail-label">Frame ID</div>
+                  <div class="detail-value">${escapeHtml(String(m.frame_id))}</div>
+                </div>
+              `;
+            }
+            
+            if (m.model_version) {
+              details.innerHTML += `
+                <div class="detail-item">
+                  <div class="detail-label">Model</div>
+                  <div class="detail-value">${escapeHtml(m.model_version)}</div>
+                </div>
+              `;
+            }
+            
+            if (m.bbox && Array.isArray(m.bbox)) {
+              details.innerHTML += `
+                <div class="detail-item">
+                  <div class="detail-label">BBox</div>
+                  <div class="detail-value">${m.bbox.map(x=>Math.round(x)).join(', ')}</div>
+                </div>
+              `;
+            }
+            
+            body.appendChild(details);
+
+            // Top probabilities
+            if (m.raw_probs && typeof m.raw_probs === 'object') {
+              const topProbs = document.createElement('div');
+              topProbs.className = 'top-probs';
+              topProbs.innerHTML = '<div class="top-probs-title">Detection Confidence</div>';
+              
+              const entries = Object.entries(m.raw_probs).sort((a,b)=>b[1]-a[1]).slice(0,3);
+              entries.forEach(([label, prob]) => {
+                const percentage = Math.round(prob * 100);
+                topProbs.innerHTML += `
+                  <div class="prob-bar">
+                    <div class="prob-label">
+                      <span class="prob-name">${escapeHtml(label)}</span>
+                      <span class="prob-value">${percentage}%</span>
+                    </div>
+                    <div class="prob-fill">
+                      <div class="prob-fill-inner" style="width: ${percentage}%"></div>
+                    </div>
+                  </div>
+                `;
+              });
+              
+              body.appendChild(topProbs);
+            }
+          }
+
+          // Image
+          if (record.image && record.image !== 'no_image.jpg') {
+            const imgLink = document.createElement('a');
+            imgLink.href = '/evidence/' + encodeURIComponent(record.image);
+            imgLink.target = '_blank';
+            imgLink.className = 'card-image';
+            const img = document.createElement('img');
+            img.alt = `${record.label} at ${record.time}`;
+            img.src = '/evidence/' + encodeURIComponent(record.image);
+            imgLink.appendChild(img);
+            body.appendChild(imgLink);
+          }
+
+          card.appendChild(body);
+          container.appendChild(card);
+        });
+      }
+
+      function escapeHtml(s) {
+        if (s === null || s === undefined) return '';
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c];
+        });
+      }
+
+      const refreshBtn = document.getElementById('refresh');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          clearHistoryDisplay();
+          refreshBtn.disabled = true;
+          try {
+            await fetchHistory();
+          } finally {
+            refreshBtn.disabled = false;
+          }
+        });
+      }
+
+      const clearBtn = document.getElementById('clearHistory');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (!confirm('Are you sure you want to clear all alert history? This cannot be undone.')) return;
+          clearBtn.disabled = true;
+          try {
+            const res = await fetch('/api/clear-history', { method: 'POST' });
+            if (!res.ok) throw new Error('Server error: ' + res.status);
+            await fetchHistory();
+          } catch (err) {
+            console.error('Clear history failed', err);
+            alert('Failed to clear history. Please check server connection.');
+          } finally {
+            clearBtn.disabled = false;
+          }
+        });
+      }
+
+      fetchHistory();
+      setInterval(fetchHistory, POLL_MS);
+    </script>
+  </body>
+</html>

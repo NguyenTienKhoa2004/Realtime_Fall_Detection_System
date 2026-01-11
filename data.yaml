@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 3
+names: ['fall', 'sit', 'standing']
+
+roboflow:
+  workspace: projectai-iupjt
+  project: fall-mk49o
+  version: 3
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/projectai-iupjt/fall-mk49o/dataset/3
