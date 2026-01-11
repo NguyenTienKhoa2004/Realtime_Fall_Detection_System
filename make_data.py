@@ -78,7 +78,7 @@ def process_dataset(input_folder, output_csv, max_images=None):
 
 if __name__ == "__main__":
     # Create Train CSV
-    process_dataset('dataset_da_chia/train', 'train.csv', max_images=120)
+    process_dataset('dataset/train', 'train.csv', max_images=120)
     
     # Create Test CSV
-    process_dataset('dataset_da_chia/test', 'test.csv')
+    process_dataset('dataset/test', 'test.csv')

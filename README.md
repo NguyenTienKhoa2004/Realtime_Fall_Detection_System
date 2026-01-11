@@ -99,8 +99,8 @@ Security is handled via environment variables.
 
 ### 2. Tuning Detection Logic (`client.py`)
 You can adjust these constants at the top of `client.py` to fit your specific scenario:
-*   `FALL_CONFIRM_SECONDS = 1.0`: How long a "fall" pose must be detected to count as a fall.
-*   `INACTIVITY_SECONDS = 1.0`: How long the person must be "still" after falling to trigger an alert.
+*   `FALL_CONFIRM_SECONDS = 4.0`: How long the person should stay as "fall" to be confirmed.
+*   `INACTIVITY_SECONDS = 3.0`: How long the person movement should be freezed to be confirmed as "inactivity".
 *   `RESET_COOLDOWN_SECONDS = 10.0`: Time before the system resets after an alert.
 *   `MOTION_THRESHOLD = 0.05`: Sensitivity for detecting movement (Inactivity check).
 
@@ -132,7 +132,7 @@ If you want to train the system on your own dataset (e.g., adding "Yoga" or "Lyi
 ### 1. Prepare Data Folder Structure
 Organize your images into folders by class name:
 ```
-dataset_da_chia/
+dataset/
 ├── train/
 │   ├── fall/       # Images of people falling/fallen
 │   ├── normal/     # Images of people standing/walking
@@ -210,4 +210,11 @@ The system does **not** alert immediately upon detecting a fall. It follows a hu
    *   Adjust `FALL_CONFIRM_SECONDS` higher (e.g., 2.0s) in `client.py`.
 
 ---
-*Created by [Your Name/Group]*
+
+## 👥 Contributors
+
+| Member Name | Contribution % |
+|-------------|----------------|
+| Nguyen Tien Khoa | 33.33% |
+| Ta Le Khoi Vi | 33.33% |
+| Nguyen Hoang Hao | 33.33% |
