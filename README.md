@@ -66,13 +66,26 @@ The project consists of two main components:
     ```
 
 2.  **Create a Virtual Environment (Optional but Recommended)**
+    Using a virtual environment keeps this project's dependencies isolated from your other Python projects.
+
+    **Step 1: Create the Environment**
     ```bash
     python -m venv env
-    # Windows
-    .\env\Scripts\activate
-    # Linux/Mac
-    source env/bin/activate
     ```
+
+    **Step 2: Activate the Environment**
+    *   **Windows (PowerShell):**
+        ```powershell
+        .\env\Scripts\activate
+        ```
+        *If you see a security error, try running `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process` first.*
+    
+    *   **Linux / MacOS:**
+        ```bash
+        source env/bin/activate
+        ```
+    
+    *   **Success Check:** You should see `(env)` appear at the start of your terminal line.
 
 3.  **Install Dependencies**
     ```bash
@@ -135,11 +148,13 @@ Organize your images into folders by class name:
 dataset/
 ├── train/
 │   ├── fall/       # Images of people falling/fallen
-│   ├── normal/     # Images of people standing/walking
-│   └── sitting/    # Images of people sitting
+│   ├── standing/     # Images of people standing/walking
+│   └── sit/    # Images of people sitting
 └── test/
     ├── fall/
-    └── ...
+    ├── standing/
+    └── sit/ 
+    
 ```
 
 ### 2. Extract Features (`make_data.py`)
